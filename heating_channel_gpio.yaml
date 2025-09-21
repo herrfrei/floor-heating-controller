@@ -1,0 +1,148 @@
+###### Info at https://github.com/nliaudat/floor-heating-controller/wiki/heating_channel_tanh
+
+########### cover 
+cover:
+  - platform: endstop
+    name: CH${channel_number}
+    device_class: shutter
+    open_action:
+      - switch.turn_on: CH${channel_number}_IA_pin
+      - switch.turn_off: CH${channel_number}_IB_pin
+    open_duration: 60s
+    open_endstop: BEMF_${channel_number}_sensor
+    close_action:
+      - switch.turn_on: CH${channel_number}_IB_pin
+      - switch.turn_off: CH${channel_number}_IA_pin
+    close_duration: 60s
+    close_endstop: BEMF_${channel_number}_sensor
+    stop_action:
+      - switch.turn_off: CH${channel_number}_IA_pin
+      - switch.turn_off: CH${channel_number}_IB_pin
+    max_duration : 65s
+    #assumed_state: true
+    id: CH${channel_number}_cover
+    # web_server:
+      # sorting_group_id: sorting_group_covers
+    
+number:
+  - platform: template
+    name: "bemf_trigger_${channel_number}"
+    optimistic: true
+    min_value: 0.005
+    max_value: 1.50
+    step: 0.005
+    restore_value: true
+    initial_value: ${bemf_trigger_initial_value}
+    id: bemf_trigger_${channel_number}
+    # web_server:
+      # sorting_group_id: sorting_group_inputs
+    
+script:  
+  - id: calibrate_CH${channel_number}_cover
+    then:
+      - logger.log:
+          format: "Calibrate CH${channel_number}"
+          tag: heat_ctrl_main
+      - cover.close: CH${channel_number}_cover
+      - delay: 5s
+      - cover.open: CH${channel_number}_cover
+      - delay: 5s
+      - cover.close: CH${channel_number}_cover
+      - delay: 5s
+      - cover.open: CH${channel_number}_cover
+      - delay: 5s
+      - cover.close: CH${channel_number}_cover
+      - delay: 5s
+      - cover.open: CH${channel_number}_cover
+      - delay: 60s
+      - cover.close: CH${channel_number}_cover
+      - delay: 60s
+      - cover.close: CH${channel_number}_cover
+      - delay: 60s
+      - cover.close: CH${channel_number}_cover
+
+### back electromotive force (back EMF)
+### https://en.wikipedia.org/wiki/Counter-electromotive_force
+               
+binary_sensor:
+  - platform: template
+    id: BEMF_${channel_number}_sensor
+    name: "BEMF CH${channel_number} sensor"
+    lambda: return ((id(${bemf_sensor_adc}).state >= id(bemf_trigger_${channel_number}).state));
+    on_press:
+      then: 
+         - lambda: |-
+                if (id(CH${channel_number}_cover).current_operation == COVER_OPERATION_OPENING) {
+                    auto call = id(CH${channel_number}_cover).make_call();
+                    call.set_command_stop();
+                    call.perform();
+                    id(CH${channel_number}_cover).position  = 1.0; //1.0 = 100% = OPEN
+                    id(CH${channel_number}_cover).publish_state();
+                    id(${id_prefix}bemf_logs).publish_state("CH${channel_number} opening endstop reached at " + to_string(id(${bemf_sensor_adc}).state) + " V");
+                    ESP_LOGD("heat_ctrl_bemf", "CH${channel_number} opening endstop reached at %f V", id(${bemf_sensor_adc}).state);
+                } else if (id(CH${channel_number}_cover).current_operation == COVER_OPERATION_CLOSING) {
+                    auto call = id(CH${channel_number}_cover).make_call();
+                    call.set_command_stop();
+                    call.perform();
+                    id(CH${channel_number}_cover).position  = 0.0; //0.0 = 0% = CLOSED
+                    id(CH${channel_number}_cover).publish_state();
+                    id(${id_prefix}bemf_logs).publish_state("CH${channel_number} closing endstop reached at " + to_string(id(${bemf_sensor_adc}).state) + " V");
+                    ESP_LOGD("heat_ctrl_bemf", "CH${channel_number} closing endstop reached at %f V", id(${bemf_sensor_adc}).state);
+                }
+    internal: true  
+    # filters:
+    # - delayed_on_off: 50ms # prevent trigger at motor start : https://esphome.io/components/binary_sensor/
+    # web_server:
+      # sorting_group_id: sorting_group_BEMF
+
+
+
+switch: 
+  - platform: gpio
+    name: "CH${channel_number} IA"
+    pin:
+      sn74hc595: sn74hc595_hub
+      number: ${sn74hc595_IA_pin}
+      inverted: False
+    internal: true  
+    on_turn_on: #interlock do not support templating => replaced with switch.turn_off
+        - switch.turn_off: CH${channel_number}_IB_pin
+        - delay: 200ms #allow for switching time and any discharge
+    id: CH${channel_number}_IA_pin
+    #interlock: [CH${channel_number}_IA_pin, CH${channel_number}_IB_pin] #interlock: &interlock_group_CH1 [CH1_IA_pin, CH1_IB_pin]
+    restore_mode: always off
+  - platform: gpio
+    name: "CH${channel_number} IB"
+    pin:
+      sn74hc595: sn74hc595_hub
+      number: ${sn74hc595_IB_pin}
+      inverted: False
+    internal: true 
+    on_turn_on:
+        - switch.turn_off: CH${channel_number}_IA_pin
+        - delay: 200ms #allow for switching time and any discharge
+    id: CH${channel_number}_IB_pin
+    #interlock: CH${channel_number}_IA_pin #interlock: *interlock_group_CH1
+    restore_mode: always off
+
+      
+# sensor:
+    # - platform: template
+      # id: bemf_opening_${channel_number}
+      # name: bemf_opening_${channel_number}
+      # accuracy_decimals: 0
+      # update_interval: never
+      # unit_of_measurement: 'mV'
+      # device_class: voltage
+      # state_class: measurement
+      # #internal: true
+      
+    # - platform: template
+      # id: bemf_closing_${channel_number}
+      # name: bemf_closing_${channel_number}
+      # accuracy_decimals: 0
+      # update_interval: never
+      # unit_of_measurement: 'mV'
+      # device_class: voltage
+      # state_class: measurement
+      # #internal: true

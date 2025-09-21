@@ -1,0 +1,36 @@
+# Extension board 2 interface pins
+
+binary_sensor:
+  - platform: gpio
+    pin:
+      number: ${gpio_pin}
+      mode:
+        input: true
+    name: ${room}_input
+    on_press:
+      then:
+        ${on_press}
+    on_release:
+      then:
+        ${on_release}
+    device_class: cold
+    id: ${room}_gpio_input
+    trigger_on_initial_state: true
+    filters:
+    - delayed_on_off: ${switch_default_delay}    # fixed value, not changeable via API!
+    
+ 
+      
+# use GPIO32, GPIO33 as adc:
+# sensor:
+  # - platform: adc
+    # pin: GPIO32
+    # name: "EXT-ADC 1 (IO32)"
+    # update_interval: 100ms
+    
+  # - platform: adc
+    # pin: GPIO33
+    # name: "EXT-ADC 2 (IO33)"
+    # update_interval: 100ms
+    
+    

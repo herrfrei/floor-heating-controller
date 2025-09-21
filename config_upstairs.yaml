@@ -1,0 +1,285 @@
+
+# for flashing : press boot button for 2-3 seconds before the serial connection initialize
+# After OTA update, the EN (reset) button must be pressed to run firmware
+# do not use gpio12 (MTDI)
+
+##### temporary fix to use new adc library (https://github.com/esphome/issues/issues/6455)
+external_components:
+  - source: github://pr#9021 #https://github.com/esphome/esphome/pull/9021
+    refresh: 30s
+    components:
+      - adc
+
+############## General configuration
+
+# https://wokwi.com/projects/442693489187542017
+
+substitutions:
+  name: heating-upstairs #no special characters
+  network_domain: ".localdomain"
+  friendly_name: "HKV Steuerung OG"
+  id_prefix: "heating_upstairs" #if you have more than one board, it could be usefull to remane all the "id:heating_controller_xxxx" with a decicaded prefix [not done in sensor_adc.yaml actually]
+  revision: "1.123"
+    
+  #time
+  TZ: "Europe/Berlin" #timezone
+  reboot_days_of_week: "MON"
+  reboot_hours: "9"
+  reboot_minutes: "0"
+  reboot_seconds: "0"
+  # valve_maintenance_interval: "7days"
+  onboot_valve_calibration_delay: "1min"
+  
+  #dallasaddress_input: "0xb300000084aa6128"
+  #dallasaddress_output: "0xeb0000008492ad28"
+  
+  adc_zero_calibration: "-0.075" #typical : -0.075 for esp32 devkit, 0.005 for esp32-c3. + motor eventual specific inpedance
+  
+web_server:
+  port: 80
+  version: 3
+  # sorting_groups:
+    # - id: sorting_group_climate
+      # name: "Climate"
+      # sorting_weight: 1
+    # - id: sorting_group_sensors
+      # name: "Sensors"
+      # sorting_weight: 2
+    # - id: sorting_group_actions
+      # name: "Actions"
+      # sorting_weight: 3
+    # - id: sorting_group_covers
+      # name: "Manual covers"
+      # sorting_weight: 40
+    # - id: sorting_group_BEMF
+      # name: "Debug : BEMF"
+      # sorting_weight: 50
+    # - id: sorting_group_inputs
+      # name: "Debug : inputs"
+      # sorting_weight: 60
+  log: true
+  # local: false #true in case of no internet
+  
+# Enable HOME Assistant API
+api:
+  reboot_timeout: 30min
+
+  
+############## Channels definition (packages as template : https://espHOME.io/guides/configuration-types.html#packages-as-templates)
+packages:
+
+#### normal channel config
+  channel_1: !include
+    file: heating_channel_gpio.yaml
+    vars:
+      channel_number: 1
+      id: guestroom
+      frendly_name: Gästezimmer 
+      bemf_trigger_initial_value: "0.650" # 0.105 for boards < v60 | 0.650 for boards >=v61      
+      # do not change : 
+      bemf_sensor_adc: BEMF_1_2_sensor_ADC
+      bemf_linked_with_channel: 2
+      sn74hc595_IA_pin: 0
+      sn74hc595_IB_pin: 1
+      
+      
+
+  channel_2: !include
+    file: heating_channel_gpio.yaml
+    vars:
+      channel_number: 2
+      id: bathroom1
+      frendly_name: Bad 1
+      bemf_trigger_initial_value: "0.650" # 0.105 for boards < v60 | 0.650 for boards >=v61
+      ## do not change : 
+      bemf_sensor_adc: BEMF_1_2_sensor_ADC
+      bemf_linked_with_channel: 1
+      sn74hc595_IA_pin: 2
+      sn74hc595_IB_pin: 3
+      
+
+      
+  channel_3: !include
+    file: heating_channel_gpio.yaml
+    vars:
+      channel_number: 3
+      id: bathroom2
+      frendly_name: Bad 2
+      bemf_trigger_initial_value: "0.650" # 0.105 for boards < v60 | 0.650 for boards >=v61
+      ## do not change :
+      bemf_sensor_adc: BEMF_3_4_sensor_ADC
+      bemf_linked_with_channel: 4
+      sn74hc595_IA_pin: 4
+      sn74hc595_IB_pin: 5
+      
+      
+  channel_4: !include
+    file: heating_channel_gpio.yaml
+    vars:
+      channel_number: 4
+      id: bedroom1
+      frendly_name: Schlafzimmer 1
+      bemf_trigger_initial_value: "0.650" # 0.105 for boards < v60 | 0.650 for boards >=v61
+      ## do not change :
+      bemf_sensor_adc: BEMF_3_4_sensor_ADC
+      bemf_linked_with_channel: 3
+      sn74hc595_IA_pin: 6
+      sn74hc595_IB_pin: 7
+        
+ 
+  channel_5: !include
+    file: heating_channel_gpio.yaml
+    vars:
+      channel_number: 5
+      id: bedroom2
+      frendly_name: Schlafzimmer 2
+      bemf_trigger_initial_value: "0.650" # 0.105 for boards < v60 | 0.650 for boards >=v61
+      ## do not change :
+      bemf_sensor_adc: BEMF_5_6_sensor_ADC
+      bemf_linked_with_channel: 6
+      sn74hc595_IA_pin: 8
+      sn74hc595_IB_pin: 9
+           
+      
+      
+  channel_6: !include
+    file: heating_channel_gpio.yaml
+    vars:
+      channel_number: 6
+      id: workroom1
+      frendly_name: Arbeitszimmer 1
+      bemf_trigger_initial_value: "0.650" # 0.105 for boards < v60 | 0.650 for boards >=v61
+      ## do not change :
+      bemf_sensor_adc: BEMF_5_6_sensor_ADC
+      bemf_linked_with_channel: 5
+      sn74hc595_IA_pin: 10
+      sn74hc595_IB_pin: 11
+      
+      
+  channel_7: !include
+    file: heating_channel_gpio.yaml
+    vars:
+      channel_number: 7
+      id: workroom2
+      frendly_name: Arbeitszimmer 2
+      bemf_trigger_initial_value: "0.650" # 0.105 for boards < v60 | 0.650 for boards >=v61
+      ## do not change :
+      bemf_sensor_adc: BEMF_7_8_sensor_ADC
+      bemf_linked_with_channel: 8
+      sn74hc595_IA_pin: 12
+      sn74hc595_IB_pin: 13
+         
+  # not used
+  # channel_8: !include
+    # file: heating_channel_gpio.yaml
+    # vars:
+      # channel_number: 8
+      # id: bathroom
+      # frendly_name: bathroom
+      # bemf_trigger_initial_value: "0.650" # 0.105 for boards < v60 | 0.650 for boards >=v61
+      # ## do not change :
+      # bemf_sensor_adc: BEMF_7_8_sensor_ADC
+      # bemf_linked_with_channel: 7
+      # sn74hc595_IA_pin: 14
+      # sn74hc595_IB_pin: 15
+         
+  room_request_1: !include
+    file: sensor_ext.yaml
+    vars:
+      gpio_pin: GPIO18
+      room: guestroom
+      switch_default_delay: 10.0s  # delay time before external input level change is used
+      on_press:
+        - cover.open: CH1_cover
+      on_release:
+        - cover.close: CH1_cover
+        
+  room_request_2: !include
+    file: sensor_ext.yaml
+    vars:
+      gpio_pin: GPIO19
+      room: bathroom
+      switch_default_delay: 10.0s  # delay time before external input level change is used
+      on_press:
+        - cover.open: CH2_cover
+        - cover.open: CH3_cover 
+      on_release:
+        - cover.close: CH2_cover
+        - cover.close: CH3_cover 
+
+  room_request_3: !include
+    file: sensor_ext.yaml
+    vars:
+      gpio_pin: GPIO15
+      room: sleeping_room
+      switch_default_delay: 10.0s  # delay time before external input level change is used
+      on_press:
+        - cover.open: CH4_cover
+        - cover.open: CH5_cover 
+      on_release:
+        - cover.close: CH4_cover
+        - cover.close: CH5_cover 
+        
+  room_request_4: !include
+    file: sensor_ext.yaml
+    vars:
+      gpio_pin: GPIO4
+      room: working_room
+      switch_default_delay: 10.0s  # delay time before external input level change is used
+      on_press:
+        - cover.open: CH6_cover
+        - cover.open: CH7_cover 
+        - switch.turn_on: ext5_output_pin
+      on_release:
+        - cover.close: CH6_cover
+        - cover.close: CH7_cover 
+        
+  output:
+    switch:
+      - platform: gpio
+        name: "Request Heat"
+        pin: GPIO25
+        id: ext5_output_pin
+        internal: true   
+    script:  
+      - id: any_cover_open_check
+        then:
+          - lambda: |-
+              if ((id(CH1_cover).position > 0) || 
+                  (id(CH2_cover).position > 0) ||
+                  (id(CH4_cover).position > 0) ||
+                  (id(CH6_cover).position > 0))
+              {
+                if (!id(ext5_output_pin).state) {
+                  id(${id_prefix}main_logs).publish_state("Switching on heat request, at least one valve is opened");
+                  ESP_LOGI("${id_prefix}", "Switching on heat request, at least one valve is opened");
+                  id(ext5_output_pin).turn_on();
+                }
+              }
+              else {
+                if (id(ext5_output_pin).state) {
+                  id(${id_prefix}main_logs).publish_state("Switching off heat request, all valves are closed");
+                  ESP_LOGI("${id_prefix}", "Switching off heat request, all valves are closed");
+                  id(ext5_output_pin).turn_off();
+                }
+              }
+    interval:
+      - interval: 10s
+        then:
+          - script.execute: any_cover_open_check
+
+  board: !include board_esp32.yaml
+  # board: !include board_esp32-C3.yaml
+  logger: !include logger.yaml
+  sn74hc595: !include sn74hc595.yaml
+  # todo: check for operation withput WiFi (reboot_timeout, passive_scan )
+  wifi: !include wifi_single_ssid.yaml
+  time: !include time.yaml
+  script_calibrate_valves: !include script_calibrate_7_valves.yaml
+  switch_others: !include switch_others.yaml
+  inputs: !include inputs.yaml
+  sensor_adc: !include sensor_adc.yaml
+  sensor_temperature: !include sensor_temperature.yaml
+  sensor_others: !include sensor_others.yaml
+  #onwire: !include onewire.yaml #only for boards >= rev 61
+
