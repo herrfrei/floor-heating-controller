@@ -27,7 +27,7 @@ substitutions:
   reboot_hours: "9"
   reboot_minutes: "0"
   reboot_seconds: "0"
-  # valve_maintenance_interval: "7days"
+  valve_maintenance_interval: "3days"
   onboot_valve_calibration_delay: "1min"
   
   #dallasaddress_input: "0xb300000084aa6128"
@@ -62,7 +62,8 @@ web_server:
   
 # Enable HOME Assistant API
 api:
-  reboot_timeout: 30min
+  # reboot_timeout: 30min
+  reboot_timeout: 0s          # NEVER reboot when HA connection is lost
 
   
 ############## Channels definition (packages as template : https://espHOME.io/guides/configuration-types.html#packages-as-templates)
@@ -81,8 +82,6 @@ packages:
       bemf_linked_with_channel: 2
       sn74hc595_IA_pin: 0
       sn74hc595_IB_pin: 1
-      
-      
 
   channel_2: !include
     file: heating_channel_gpio.yaml
@@ -96,9 +95,7 @@ packages:
       bemf_linked_with_channel: 1
       sn74hc595_IA_pin: 2
       sn74hc595_IB_pin: 3
-      
 
-      
   channel_3: !include
     file: heating_channel_gpio.yaml
     vars:
@@ -111,8 +108,7 @@ packages:
       bemf_linked_with_channel: 4
       sn74hc595_IA_pin: 4
       sn74hc595_IB_pin: 5
-      
-      
+
   channel_4: !include
     file: heating_channel_gpio.yaml
     vars:
@@ -125,8 +121,7 @@ packages:
       bemf_linked_with_channel: 3
       sn74hc595_IA_pin: 6
       sn74hc595_IB_pin: 7
-        
- 
+
   channel_5: !include
     file: heating_channel_gpio.yaml
     vars:
@@ -139,9 +134,7 @@ packages:
       bemf_linked_with_channel: 6
       sn74hc595_IA_pin: 8
       sn74hc595_IB_pin: 9
-           
-      
-      
+
   channel_6: !include
     file: heating_channel_gpio.yaml
     vars:
@@ -154,8 +147,7 @@ packages:
       bemf_linked_with_channel: 5
       sn74hc595_IA_pin: 10
       sn74hc595_IB_pin: 11
-      
-      
+   
   channel_7: !include
     file: heating_channel_gpio.yaml
     vars:
@@ -168,7 +160,7 @@ packages:
       bemf_linked_with_channel: 8
       sn74hc595_IA_pin: 12
       sn74hc595_IB_pin: 13
-         
+    
   # not used
   # channel_8: !include
     # file: heating_channel_gpio.yaml
@@ -182,7 +174,7 @@ packages:
       # bemf_linked_with_channel: 7
       # sn74hc595_IA_pin: 14
       # sn74hc595_IB_pin: 15
-         
+
   room_request_1: !include
     file: sensor_ext.yaml
     vars:
@@ -193,7 +185,7 @@ packages:
         - cover.open: CH1_cover
       on_release:
         - cover.close: CH1_cover
-        
+
   room_request_2: !include
     file: sensor_ext.yaml
     vars:
@@ -219,7 +211,7 @@ packages:
       on_release:
         - cover.close: CH4_cover
         - cover.close: CH5_cover 
-        
+
   room_request_4: !include
     file: sensor_ext.yaml
     vars:
@@ -233,7 +225,7 @@ packages:
       on_release:
         - cover.close: CH6_cover
         - cover.close: CH7_cover 
-        
+
   output:
     switch:
       - platform: gpio
@@ -264,9 +256,12 @@ packages:
                 }
               }
     interval:
-      - interval: 10s
+      - interval: 30s
         then:
-          - script.execute: any_cover_open_check
+          - lambda: |-
+              if (!id(valve_maintenance).is_running()) {
+                id(any_cover_open_check).execute();
+              }
 
   board: !include board_esp32.yaml
   # board: !include board_esp32-C3.yaml

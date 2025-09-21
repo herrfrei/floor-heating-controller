@@ -11,7 +11,7 @@ time:
     then:
       - switch.toggle: floor_heating_ctrl_reboot
 
-# interval:
-  # - interval: ${valve_maintenance_interval}
-    # then:
-      # - script.execute: valve_maintenance
+interval:
+  - interval: ${valve_maintenance_interval}
+    then:
+      - script.execute: valve_maintenance

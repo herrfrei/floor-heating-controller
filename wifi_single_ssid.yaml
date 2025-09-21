@@ -15,11 +15,13 @@ wifi:
   #  password: !secret wifi_password_3
   #  priority : 3
 #  use_address: floor_heating_controller.local
-
+  reboot_timeout: 0s          # NEVER reboot because of WiFi connection loss
+    
 # Enable fallback hotspot (captive portal) in case wifi connection fails
   ap:
     ssid: "${name} Flbck"
     password: !secret fallback_hotspot_password
+    ap_timeout: 0s              # AP stays active when no WiFi connection is established
     
 captive_portal:
 
